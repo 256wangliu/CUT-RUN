@@ -1,5 +1,4 @@
 #Start with fastq's in a folder named fastq with SE or PE reads with _1 or _2.fastq
-
 source /etc/profile.d/apps.sh
 
 echo "Program Started: $(date)" > timelog.txt
@@ -50,14 +49,14 @@ do
     echo "beginning alignment to galGal6 of file ${FILEPAIR}"
 	bowtie2 --local --very-sensitive-local \
 		--no-unal --no-mixed --no-discordant \
-		--threads 16 \
+		--threads 62 \
 		-x /data/Austin/workdir/genome/bowtie2-GRCg6a/GRCg6a \
 		-I 10 -X 1000 \
 		-1 "trimmed_${F1}" \
 		-2 "trimmed_${F2}" \
 		-S ${F1/.fastq/_toGalGal6.SAM}
 	echo "complete"
-	
+
 done
 wait
 
@@ -68,9 +67,9 @@ echo "Reads Aligned: $(date)" >> timelog.txt
 
 for FILE in ./trimmedFastq/*.SAM; do
 
-    samtools view -F 1804 -b -@ 16 $FILE |
-    samtools sort -@ 16 > "${FILE/.SAM/.BAM}" &&
-    samtools index -@ 16 "${FILE/.SAM/.BAM}"
+    samtools view -F 1804 -b -@ 62 $FILE |
+    samtools sort -@ 62 > "${FILE/.SAM/.BAM}" &&
+    samtools index -@ 62 "${FILE/.SAM/.BAM}"
 
 done
 
@@ -95,7 +94,7 @@ wait
 for file in ./BAM/*.BAM
 
 do
-	java -jar $PICARD MarkDuplicates \
+	java -jar /opt/picard/picard.jar MarkDuplicates \
 			I="${file}" \
 			O="${file/.BAM/_dupsMarked.BAM}" \
 			M="${file/.BAM/_dupsMarkedStats.txt}"
@@ -106,8 +105,8 @@ echo "Duplicates marked: $(date)" >> timelog.txt
 
 for FILE in ./BAM/*_dupsMarked.BAM
 do
-	samtools view -F 1804 -f 2 -b -@ 16 $FILE |
-	samtools sort -@ 16 > "${FILE/_dupsMarked.BAM/_nodups.BAM}" &&
+	samtools view -F 1804 -f 2 -b -@ 62 $FILE |
+	samtools sort -@ 62 > "${FILE/_dupsMarked.BAM/_nodups.BAM}" &&
 	samtools index "${FILE/_dupsMarked.BAM/_nodups.BAM}"
 done
 wait
@@ -120,10 +119,10 @@ do
 			--outFileName "$FILE".bw \
 			--outFileFormat bigwig \
 			--binSize 5 \
-			--numberOfProcessors 16 \
+			--numberOfProcessors 62 \
 			--normalizeUsing RPGC \
 			--effectiveGenomeSize 1218492533 \
-			--extendReads		
+			--extendReads
 done
 wait
 
@@ -148,7 +147,7 @@ for FILE in ./BAM/*_nodups.BAM
 		-f BAMPE \
 		-g 1218492533 \
 		-q 0.05 \
-		--call-summits 		
+		--call-summits
 done
 
 echo "Peaks called: $(date)" >> timelog.txt
